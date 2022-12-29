@@ -24,18 +24,28 @@ export class BookingController {
       }
 
       // Check if the requested time slot is available
-      const timeSlots = business.workSchedule.reduce((acc, day) => {
-        //TODO: check if i can get the day/date when entering the time and only generate timeslot for that day
-        for (let i = make24Hour(day.startTime);compareTime(i, day.endTime) === true;i = addMinutes(i, 15)) {
-            if (i.endsWith("PM" || i.endsWith("AM"))) {
-                slotsOfTheDay.slots.push(i);
-              } else {
-                let toPush = make12Hour(i);
-                slotsOfTheDay.slots.push(toPush);
-              }
+      const timeSlots = [];
+      //req.body contains the date and time
+      const date = req.body.date; //in mm-dd-yyyy format
+      let dt = new Date(date);
+      let day = dt.getDay();
+      day = getDayName(day);
+      // console.log(day);
+      //   console.log(business.workSchedule);
+      const findDay = business.workSchedule.find((el) => el.day === day);
+      //   console.log(findDay);
+      for (
+        let i = make24Hour(findDay.startTime);
+        compareTime(i, findDay.endTime) === true;
+        i = addMinutes(i, 15)
+      ) {
+        if (i.endsWith("PM" || i.endsWith("AM"))) {
+          timeSlots.push(i);
+        } else {
+          let toPush = make12Hour(i);
+          timeSlots.push(toPush);
         }
-        return acc;
-      }, []);
+      }
       if (!timeSlots.includes(req.body.time)) {
         return res.status(400).json({
           error: "Time slot not available",
@@ -57,7 +67,10 @@ export class BookingController {
       const booking = new Booking({
         business: req.params.businessId,
         service: req.body.service,
-        time: req.body.time,
+        timing: {
+          date: req.body.date,
+          time: req.body.time,
+        },
         customer: req.body.customer,
         phone: req.body.phone,
       });
@@ -123,20 +136,19 @@ export class BookingController {
     }
 
     //helper function to get day from date
-    function getDayName(num){
-        const numToDay = {
-            0:"Sunday",
-            1:"Monday",
-            2:"Tuesday",
-            3:"Wednesday",
-            4:"Thursday",
-            5:"Friday",
-            6:"Saturday",
-        }
+    function getDayName(num) {
+      const numToDay = {
+        0: "Sunday",
+        1: "Monday",
+        2: "Tuesday",
+        3: "Wednesday",
+        4: "Thursday",
+        5: "Friday",
+        6: "Saturday",
+      };
 
-        return numToDay[num];
+      return numToDay[num];
     }
-
   };
   //function to cancel a booking
   static cancelBooking = async (req, res) => {
@@ -151,10 +163,12 @@ export class BookingController {
       }
 
       // Check if the booking is at least 24 hours away
-      const startTime = new Date(booking.time);
+      const bookingTime = new Date(
+        booking.timing.date + " " + booking.timing.time
+      );
       const currentTime = new Date();
-      const timeDifference = startTime - currentTime;
-      const hoursDifference = Math.floor(timeDifference / (1000 * 60 * 60));
+      const hoursDifference =
+        (bookingTime.getTime() - currentTime.getTime()) / (1000 * 60 * 60);
       if (hoursDifference < 24) {
         return res.status(400).json({
           error: "Cannot cancel booking within 24 hours of start time",

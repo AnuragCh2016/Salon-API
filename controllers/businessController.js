@@ -261,9 +261,11 @@ export class BusinessController {
       // Find bookings for the current month and the specified business
       const bookings = await Booking.find({
         business: req.params.businessId,
-        time: {
-          $gte: new Date(`${currentYear}-${currentMonth}-01T00:00:00.000Z`),
-          $lt: new Date(`${currentYear}-${currentMonth + 1}-01T00:00:00.000Z`),
+        timing: {
+          date:{
+            $gte: new Date(`${currentYear}-${currentMonth}-01T00:00:00.000Z`),
+            $lt: new Date(`${currentYear}-${currentMonth + 1}-01T00:00:00.000Z`),
+          }
         },
       });
 

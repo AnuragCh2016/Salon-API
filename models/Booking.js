@@ -2,6 +2,17 @@ import mongoose from "mongoose";
 import { Business } from "./Business.js";
 const { Schema } = mongoose;
 
+const dateTimeSchema = new Schema({
+    date: {
+        type: String,
+        required: true,
+    },
+    time: {
+        type: String,
+        required: true,
+    },
+});
+
 const bookingSchema = new Schema({
   business: {
     type: Schema.ObjectId,
@@ -12,12 +23,8 @@ const bookingSchema = new Schema({
     type: String,
     required: true,
   },
-  date: {
-    type: String,
-    required: true,
-  },
-  time: {
-    type: String,
+  timing:{
+    type: dateTimeSchema,
     required: true,
   },
   customer: {
