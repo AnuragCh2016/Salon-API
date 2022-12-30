@@ -136,7 +136,7 @@ export class BusinessController {
       if (currentDay) {
         // If the business is open today, create a list of time slots for the current day
         const slotsOfTheDay = {};
-        slotsOfTheDay['day'] = currentDay.day;
+        slotsOfTheDay["day"] = currentDay.day;
         slotsOfTheDay.slots = [];
         for (
           let i = currentTime;
@@ -160,8 +160,8 @@ export class BusinessController {
         );
         if (currDay) {
           const slotsOfTheDay = {};
-          
-          slotsOfTheDay['day']= currDay.day;
+
+          slotsOfTheDay["day"] = currDay.day;
           slotsOfTheDay.slots = [];
           for (
             let j = currDay.startTime;
@@ -255,28 +255,40 @@ export class BusinessController {
 
   static generateReport = async (req, res) => {
     try {
-      const currentMonth = new Date().getMonth();
-      const currentYear = new Date().getFullYear();
+      //Find Business to get the cost for particular service
+      const business = await Business.findById(req.params.businessId);
 
       // Find bookings for the current month and the specified business
-      const bookings = await Booking.find({
+      let bookings = await Booking.find({
         business: req.params.businessId,
-        timing: {
-          date:{
-            $gte: new Date(`${currentYear}-${currentMonth}-01T00:00:00.000Z`),
-            $lt: new Date(`${currentYear}-${currentMonth + 1}-01T00:00:00.000Z`),
-          }
-        },
+      });
+      
+    //   console.log("Before filtering:",bookings);
+      
+      bookings = bookings.filter((booking) => {
+        // console.log(booking.timing.date);
+        let bookingDate = new Date(booking.timing.date+' 09:45');
+        // console.log("Date of booking is:",bookingDate)
+        let bookingMonth = bookingDate.getMonth();
+        // console.log("Month of booking is:",bookingMonth)
+        // console.log("Current month is:",new Date().getMonth());
+        // console.log("Is date of booking less than current date? :",bookingDate<=new Date());
+        return (
+          bookingMonth === new Date().getMonth()
+        );
       });
 
       // Calculate total revenue earned and revenue lost, and create an array of booked services
       const report = bookings.reduce(
         (acc, booking) => {
-          acc.totalRevenue += booking.service.cost;
+          let cost = business.services.find(
+            (service) => service.name === booking.service
+          ).cost;
+          acc.totalRevenue += cost;
           if (booking.cancelled) {
-            acc.revenueLost += booking.service.cost;
+            acc.revenueLost += cost;
           } else {
-            acc.bookedServices.push(booking.service);
+            acc.bookedServices.push(booking);
           }
           return acc;
         },
